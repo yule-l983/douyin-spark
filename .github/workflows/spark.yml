@@ -1,0 +1,46 @@
+name: 抖音自动续火花
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+    inputs:
+      message:
+        description: '发送的消息（留空则随机）'
+        required: false
+        default: ''
+
+jobs:
+  send-spark:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+      
+      - name: 设置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: 安装依赖
+        run: |
+          pip install -r requirements.txt
+          playwright install chromium
+          playwright install-deps chromium
+      
+      - name: 运行续火花脚本
+        env:
+          DOUYIN_COOKIE: ${{ secrets.DOUYIN_COOKIE }}
+          FRIEND_SEC_UID: ${{ secrets.FRIEND_SEC_UID }}
+          SEND_MESSAGE: ${{ github.event.inputs.message || secrets.SEND_MESSAGE }}
+        run: python douyin_spark.py
+      
+      - name: 上传调试截图
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: '*.png'
+          retention-days: 7
